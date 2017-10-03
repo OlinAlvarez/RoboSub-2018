@@ -3,10 +3,19 @@
 # Environment Settings
 - Ubuntu 17
 - Ros Lunar
+- OpenCV2 with python2
 
 # Installation
-Followed this link to perform installation
+Followed this link to perform installation for ROS
 - http://wiki.ros.org/lunar/Installation/Ubuntu
+
+Used to install opencv2
+- http://docs.opencv.org/master/d7/d9f/tutorial_linux_install.htm
 
 # Troubleshoot Problems
 - If you are obtaining issues with importing a newly created custom message within ROS, make sure the package name is different from the script being executed.
+    - Example: 
+        - Package name: computer_vision
+        - Ros Node: computer_vision.py
+
+        - Results in an error where computer_vision does not contain msg attribute.
