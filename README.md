@@ -19,3 +19,7 @@ Used to install opencv2
         - Ros Node: computer_vision.py
 
         - Results in an error where computer_vision does not contain msg attribute.
+
+## Adding python package
+Add setup.py(ensure that you add dependent packages), uncomment catkin_python_setup(), and add __init__.py to root of package
+
