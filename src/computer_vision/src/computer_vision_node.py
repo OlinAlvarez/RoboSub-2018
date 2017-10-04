@@ -29,7 +29,7 @@ def main():
         cam_number = cv_info_msg.CameraNumber
 
         # Guaranteed to have a message.
-        if  (cam_number == CameraLocation.FRONT) and 
+        if  (cam_number == CameraLocation.FRONT) and \
             (not available_cameras[cam_number].is_camera_on):
 
             print "Front camera about to do work"
