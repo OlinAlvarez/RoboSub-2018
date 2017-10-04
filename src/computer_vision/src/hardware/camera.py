@@ -1,10 +1,11 @@
 #!/usr/bin/python2
-from enum import Enum
+from enum import IntEnum
 
-class CameraLocation(Enum):
+class CameraLocation(IntEnum):
+    ALL_OFF = 0
     FRONT = 1
     BACK = 2
-    UNKNOWN = 0
+    UNKNOWN = -1
 
 class Camera:
     def __init__(self, cam_location):

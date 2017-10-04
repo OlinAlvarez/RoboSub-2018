@@ -9,6 +9,7 @@ from hardware.camera import Camera
 from hardware.camera import CameraLocation
 
 def main():
+    rospy.init_node("computer_vision_node")
 
     fcd_pub = rospy.Publisher("front_cam_distance", FrontCamDistance)
     fcd_msg = FrontCamDistance()
@@ -26,28 +27,36 @@ def main():
         # Wait for one message from cv_info_topic
         cv_info_msg = rospy.wait_for_message("cv_info_topic", CvInfo)
 
-        cam_number = cv_info_msg.CameraNumber
+        cam_number = cv_info_msg.cameraNumber
 
+        print (cam_number == CameraLocation.FRONT)
         # Guaranteed to have a message.
-        if  (cam_number == CameraLocation.FRONT) and \
-            (not available_cameras[cam_number].is_camera_on):
+        if  (cam_number == CameraLocation.FRONT):
+            if (not available_cameras[cam_number].is_camera_on()):
+                print "Front camera about to do work"
+                available_cameras[cam_number].camera_on()
+            else:
+                print "Front camera already doign work!!"
 
-            print "Front camera about to do work"
-
-        elif(cam_number == CameraLocation.UNKNOWN):
+        elif(cam_number == CameraLocation.ALL_OFF):
 
             print "Cameras are about to be turned off"
+
+            for k,v in available_cameras.items():
+                v.camera_off()
+        else:
+
+            print "Unknown camera number supplied '" + str(cam_number) + "'"
 
         loop_rate.sleep()
     
 def default_cam_msg_data(oCamDistanceMsg):
     if(isinstance(oCamDistanceMsg, FrontCamDistance)):
-        oCamDistanceMsg.FrontCamForwardDistance = None
-        oCamDistanceMsg.FrontCamHorizontalDistance = None
-        oCamDistanceMsg.FrontCamVerticalDistance = None
+        oCamDistanceMsg.frontCamForwardDistance = -1
+        oCamDistanceMsg.frontCamHorizontalDistance = -1
+        oCamDistanceMsg.frontCamVerticalDistance = -1
     
     return
 
 if __name__ == "__main__":
-    init_globals()
     main()
