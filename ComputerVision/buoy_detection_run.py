@@ -1,11 +1,10 @@
 
-''' from ComputerVision.m file ''' 
-# starting on line 180
-# ending on line 407
 
-%% Tasks
-switch msg.TaskNumber
-    case 1      % Initialize Buoy detection
+''' from ComputerVision.m file ''' 
+# starting from line 413
+# ending on line 621
+
+    case 2 % Running buoy detection
         %% Initialize Color
         color = uint8([]);
         color(1,1,:) = colors_list{color_choice,2}; % pick color from RGB choices
@@ -20,8 +19,7 @@ switch msg.TaskNumber
         colorthresh(:,:,2) = [color(:,:,2)-satthresh,color(:,:,2)+satthresh];
         colorthresh(:,:,1) = mod(colorthresh(:,:,1),1);
         colorthresh = uint8(colorthresh*255);
-        
-        
+        found = false;
         
         lowerb = colorthresh(1,1,:);    % lower bound
         upperb = colorthresh(1,2,:);    % upper bound
@@ -30,8 +28,7 @@ switch msg.TaskNumber
         
         switch camdevice
             case 'webcam'
-                %img = camera.read();
-                img = snapshot(camera);
+                img = camera.read();
             case 'image'
                 img = which('buoy.png');
                 img = cv.imread(img, 'Flags',1);
@@ -65,7 +62,6 @@ switch msg.TaskNumber
                         i = mean(mean(hsvi(:,:,3)));
                     end
                 end
-                %                 img = snapshot(camera);
                 img = img(150:480,163:652,:);
         end
         
@@ -74,15 +70,14 @@ switch msg.TaskNumber
         %%
         origin = [l/2,w/2];             % Sets the origin coordinates
         
-        
-        %%%while ~found || strcmp(msgReceiveFromMaster,'keepFinding')
-        m = 1;  % total attempts
-        n = 1;  % successful attempts
-        while m < 60 && n < 30 && (60-m > 30-n) % take at most 60 frames
+        %% while loop
+        cviMsg.CameraNumber = 1;
+        while cviMsg.CameraNumber == 1
+            
             %% Processing
             img = imrotate(img,180);
             blur = imresize(cv.medianBlur(img,'KSize',5),1/scale); % blur color image
-            HSV = rgb2hsv(blur);        % convert color image to HSV colorspace
+            HSV = rgb2hsv(blur);        % convert color image to LAB colorspace
             HSV = uint8(HSV*255);
             
             
@@ -103,7 +98,7 @@ switch msg.TaskNumber
             
             %% Arrange contours from largest to smallest
             numcnts = numel(cnts);
-            A = zeros(numcnts,2);
+            A = zeros(numcnts,2);false
             circles = false;
             if numcnts > 0
                 A(1:numcnts,2) = (1:numcnts);
@@ -127,7 +122,6 @@ switch msg.TaskNumber
                             0.04*peri,'Closed',1); % approximate the corners of the shape
                         if length(approx) > 3
                             circles = true;
-                            n = n + 1;
                             [~,radius] =  cv.minEnclosingCircle(cnt);
                             if videofeed
                                 if corners
@@ -146,25 +140,25 @@ switch msg.TaskNumber
                             center = scale.*[cX,cY];
                             radius = scale.*radius;
                             delta_h = (origin(2)-center(2));
-                            meandelta_h(n) = delta_h;
-                            %                             fcdMsg.FrontCamVerticalDistance = delta_h;
+                            fcdMsg.FrontCamVerticalDistance = delta_h;
                             delta_x = (center(1)-origin(1));
-                            meandelta_x(n) = delta_x;
-                            %                             fcdMsg.FrontCamHorizontalDistance = delta_x;
+                            fcdMsg.FrontCamHorizontalDistance = delta_x;
                             distance = given_distance*given_radius/radius;
-                            meandistance(n) = distance;
-                            %                             fcdMsg.FrontCamForwardDistance = distance;
+                            fcdMsg.FrontCamForwardDistance = distance;
+                            found = true;
                             distance = double(distance);
-                            %                             delta_x = (origin(1) - center(1))./10;
-                            meantheta(n) = atand(double(distance/delta_x));
-                            fprintf('Vertical:%3.2f Angle:%3.2f Distance:%3.2f\n',delta_h,meantheta(n),distance); % print the calculated height and amount needed to turn
+                            delta_x = double(distance);
+                            fprintf('Height:%3.2f Angle:%3.2f Distance:%3.2f\n',delta_h,delta_x,distance); % print the calculated height and amount needed to turn
                         end
                         k = k+1;
                     end
                 end
+            else
+                fcdMsg.FrontCamVerticalDistance = 999;
+                fcdMsg.FrontCamHorizontalDistance = 999;
+                fcdMsg.FrontCamForwardDistance = 999;
+                fprintf('OBJECT LOST\n');
             end
-            
-            
             if videofeed
                 img = cv.putText(img,sprintf('GAIN = %d EXPOSURE = %d',g1,e1),...
         [10,20],'FontFace','HersheyPlain','Color',[0,255,0]);
@@ -172,8 +166,7 @@ switch msg.TaskNumber
             end
             switch camdevice
                 case 'webcam'
-                    %img = camera.read();        % initialize camera image for next loop
-                    img = snapshot(camera);
+                    img = camera.read(); % initialize camera image for next loop
                 case 'image'
                     break
                 otherwise
@@ -187,9 +180,9 @@ switch msg.TaskNumber
                             e1 = e1 + 1;
                             exposure = sprintf('v4l2-ctl -d /dev/video0 -c exposure_absolute=%d',e1);
                             system(exposure);
-                            start(camera);
+%                             start(camera);
                             img = getsnapshot(camera);
-                            stop(camera);
+%                             stop(camera);
                             
                             hsvi = rgb2hsv(img);
                             i = mean(mean(hsvi(:,:,3)));
@@ -206,30 +199,17 @@ switch msg.TaskNumber
                             i = mean(mean(hsvi(:,:,3)));
                         end
                     end
-                    img = img(1:480,163:652,:);
+                    img = img(150:480,161:650,:);
             end
-            m = m + 1;
-        end
-        if n == 30 || found
+            
             if ~found
-                found = true;
+                fcdMsg.FrontCamVerticalDistance = 999;
+                fcdMsg.FrontCamHorizontalDistance = 999;
+                fcdMsg.FrontCamForwardDistance = 999;
+                fprintf('OBJECT LOST\n');
             end
-            tiMsg.State = 1;
-            tiMsg.Angle = mean(meantheta(15:end));
-            tiMsg.Height = mean(meandelta_h(15:end));
             
-            %             send(fcdPub, fcdMsg);
-            %     send(bcdPub, bcdMsg);
-            %%%send(tiPub, tiMsg);
-            
-            %fcdMsg.FrontCamHorizontalDistance = mean(theta(15:end));
-            %fcdMsg.FrontCamForwardDistance = mean(meandistance(15:end));
-            fprintf('FOUND\nAVERAGE: Angle:%3.2f Height:%3.2f\n',tiMsg.Angle,tiMsg.Height);
-            
-        else
-            tiMsg.State = 0;
-            %imshow(img);
-            %%%send(tiPub, tiMsg);
-            fprintf('Finding...\n')
+            send(fcdPub, fcdMsg);
+            cviMsg = receive(cviSub) ;
+            found = false;
         end
-        %%%end
