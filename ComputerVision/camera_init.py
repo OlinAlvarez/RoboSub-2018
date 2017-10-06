@@ -37,7 +37,7 @@ rospy.Rate(100)
 
 while 1:
 	#default values
-	fcdMsg.FrontCamForwardDistance = 999
+    fcdMsg.FrontCamForwardDistance = 999
     fcdMsg.FrontCamHorizontalDistance = 999
     fcdMsg.FrontCamVerticalDistance = 999
     bcdMsg.BottomCamForwardDistance = 999
@@ -46,7 +46,7 @@ while 1:
     tiMsg.State = 0
     tiMsg.Angle = 0
     tiMsg.Height = 0
-	tiMsg.Direction = 0	
+    tiMsg.Direction = 0
 	
 	# receive cviMsg
     # TaskNumber, GivenColor, GivenShape, GivenLength, GivenDistance
@@ -57,7 +57,7 @@ while 1:
         delete(imaqfind)
         camera = videoinput('linuxvideo',2,'RGB24_744x480')
         #camera = videoinput('linuxvideo',1,'RGB24_1280x720')
-                triggerconfig(camera,'manual')     # speeds up image acquisition for videoinput
+        triggerconfig(camera,'manual')     # speeds up image acquisition for videoinput
 #         camera.FramesPerTrigger = 1
         start(camera)
         
@@ -67,14 +67,15 @@ while 1:
         #camera = webcam(1)
         frontCam = True
         bottomCam = False
-    else if cviMsg.CameraNumber == 2 and bottomCam == False:
+
+    elif cviMsg.CameraNumber == 2 and bottomCam == False:
         delete(imaqfind)
         camera = videoinput('linuxvideo',1,'RGB24_744x480')
         triggerconfig(camera,'manual')
         start(camera)
         frontCam = False
         bottomCam = True
-    else if cviMsg.CameraNumber == 0 and (frontCam == True or bottomCam == True):
+    elif cviMsg.CameraNumber == 0 and (frontCam == True or bottomCam == True):
         stop(camera)
         frontCam = False
         bottomCam = False
