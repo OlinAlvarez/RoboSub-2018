@@ -1,5 +1,8 @@
 # RoboSub Code Repository
 
+# What are we doing?
+- Porting David Garcia's Matlab opencv buoy detection to python.
+
 # Environment Settings
 - Ubuntu 17
 - Ros Lunar
