@@ -1,6 +1,9 @@
 #!/usr/bin/python2
 from enum import IntEnum
 import cv2
+import os.path
+import os
+import datetime
 
 class CameraLocation(IntEnum):
     ALL_OFF = 0
@@ -20,7 +23,50 @@ class Camera:
         self._video_dev_index = video_index
         self._cv2_vid_capture = None
 
-    def camera_on(self):
+    def capture_image(self):
+        """
+        Takes picture using opencv
+
+        Returns
+            (boolean, image)
+        """
+        if(not self.is_on):
+            raise Exception("Please turn camera on before using it.")
+
+        return self._cv2_vid_capture.read()
+
+    def capture_and_save_image(self, file_name_location = None):
+        """
+        Captures image and saves image to the specified location
+        If not location is provided, image will be saved to '~/Pictures/img_...'
+
+        Returns
+            Boolean to inform if image was saved
+        """
+
+        successful_img, image = self.capture_image()
+
+        if(not successful_img):
+            return False
+
+        if(file_name_location is None):
+            dt_now = datetime.datetime.today()
+            dt_suffix = dt_now.strftime("%x_%X").replace("/","").replace(":","")
+
+            full_path = os.path.expanduser("~/Pictures")
+            if(not os.path.isdir(full_path)):
+                os.mkdir(full_path)
+
+            full_path = full_path + "/robosub_temp"
+            if(not os.path.isdir(full_path)):
+                os.mkdir(full_path)
+            file_name_location = full_path + "/" + "ros_temp_img_{0}.png".format(dt_suffix)
+
+        cv2.imwrite(file_name_location, image)
+
+        return True
+
+    def set_on(self):
         """
         Turns on camera and initializes opencv capture feed
 
@@ -39,7 +85,7 @@ class Camera:
         self._is_on = True
         return True
 
-    def camera_off(self):
+    def set_off(self):
         """
         Turns off camera and releases opencv2 resources
 
@@ -61,12 +107,11 @@ class Camera:
 
         return self.camera_on()
 
-    def get_camera_location(self):
+    def get_location(self):
         return self._camera_location
 
-    def get_camera_dev_index(self):
+    def get_dev_index(self):
         return self._video_dev_index
 
-    def is_camera_on(self):
+    def is_on(self):
         return self._is_on == True
-

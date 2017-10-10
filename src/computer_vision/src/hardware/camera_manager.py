@@ -75,6 +75,6 @@ class CameraManager:
 
     def turn_off_all_cameras(self):
         for enum_cam_loc, cam in self._available_cameras.items():
-            cam.camera_off()
+            cam.set_off()
 
         return

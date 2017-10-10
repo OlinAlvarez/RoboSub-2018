@@ -1,17 +1,27 @@
 #!/usr/bin/python2
 import rospy
+import signal
+import sys
 from computer_vision_driver.msg import CvInfo
 
+def signal_handler(signal, frame):
+    print ""
+    sys.exit(0)
+
 def main():
+    signal.signal(signal.SIGINT, signal_handler)
+
     rospy.init_node("computer_vision_node_driver")
     cv_info_publisher = rospy.Publisher("cv_info_topic", CvInfo)
     cvinfo_msg = CvInfo()
     reset_cvinfo_msg(cvinfo_msg) 
 
-    answer = raw_input("Please enter the camera number['q' to exit]:")
-    while(answer != "q" and not rospy.is_shutdown()):
+    cam_number = raw_input("Please enter the camera number: ")
+    task_number = raw_input("Please enter the task number: ")
+    while(not rospy.is_shutdown()):
         try:
-            cvinfo_msg.cameraNumber = int(answer)
+            cvinfo_msg.cameraNumber = int(cam_number)
+            cvinfo_msg.taskNumber = int(task_number)
             cv_info_publisher.publish(cvinfo_msg)
 
             print "Message published to cv_info_topic!"
@@ -21,7 +31,8 @@ def main():
 
 
         reset_cvinfo_msg(cvinfo_msg) 
-        answer = raw_input("Please enter the camera number['quit' to exit]:")
+        cam_number = raw_input("Please enter the camera number: ")
+        task_number = raw_input("Please enter the task number: ")
         
 def reset_cvinfo_msg(p_cvinfo_msg):
     p_cvinfo_msg.cameraNumber = -1
