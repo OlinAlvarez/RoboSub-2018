@@ -9,8 +9,8 @@ from hardware.camera import Camera
 from hardware.camera import CameraLocation
 from hardware.camera_manager import CameraManager
 
-from objectives.task_factory import TaskEnum as Task
-from objectives.task_factory import TaskFactory
+from objectives.objective_factory import ObjectiveFactory, ObjectiveEnum
+from objectives.base_objective import ObjectiveStatusEnum
 
 def main():
     rospy.init_node("computer_vision_node")
@@ -31,7 +31,7 @@ def main():
         cv_info_msg = rospy.wait_for_message("cv_info_topic", CvInfo)
 
         camera_location = CameraLocation(cv_info_msg.cameraNumber)
-        task_enum = Task(cv_info_msg.taskNumber)
+        objective_enum = ObjectiveEnum(cv_info_msg.taskNumber)
         
         # Nothing to do if unknown camera
         if (not camera_manager.contains_camera(camera_location) and camera_location != CameraLocation.ALL_OFF):
@@ -53,8 +53,12 @@ def main():
             print "Camera at location '{0}' is already on".format(camera_location.name)
 
         # Perform camera functionality
-        task_to_run_obj = TaskFactory.create_task(task_enum, primary_cam_obj)
-        task_to_run_obj.run_task()
+        objective_to_run = ObjectiveFactory.create_objective(objective_enum, camera_manager)
+        objective_to_run.start_objective()
+        if(ObjectiveStatusEnum.SUCCESS == objective_to_run.get_status()):
+            print "Objective '{0}' succeeded!!! :)".format(objective_to_run.get_name())
+        else:
+            print "Objective '{0}' failed... :(".format(objective_to_run.get_name())
 
         loop_rate.sleep()
     

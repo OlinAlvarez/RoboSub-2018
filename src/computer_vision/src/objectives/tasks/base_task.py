@@ -15,7 +15,8 @@ class EnumTaskStatus(IntEnum):
     INITIALIZING = 1
     WORKING = 2
     PAUSED = 3
-    FINISHED = 4
+    PROCESSING_RESULTS = 4
+    FINISHED = 5
 
 class InitializationException(Exception):
     pass
@@ -23,26 +24,35 @@ class InitializationException(Exception):
 class ExecutionException(Exception):
     pass
 
-class HandleResultsExceptions(Exception):
+class HandleResultsException(Exception):
     pass 
 
-class BaseTask(object):
-    def __init__(self):
-        self._task_name = ""
-        self._task_status = EnumTaskStatus.NOT_STARTED
+class TaskFailedException(Exception):
+    pass
 
-    def get_task_status(self):
+class BaseTask(object):
+    def __init__(self, task_name):
+        self._task_name = task_name
+        self._task_status = EnumTaskStatus.NOT_STARTED
+        self._input_data = None
+        self._output_data = None
+
+    def get_status(self):
         return self._task_status
 
-    def get_task_name(self):
+    def get_name(self):
         return self._task_name
 
-    def run_task(self):
+    def run_task(self, input_data = None):
+        self._input_data = input_data
+
         self.initialize()
 
         self.execute()
 
         self.handle_results()
+
+        return self._output_data
 
     def initialize(self):
         self._task_status = EnumTaskStatus.INITIALIZING
@@ -53,5 +63,5 @@ class BaseTask(object):
         return
 
     def handle_results(self):
-        self._task_status = EnumTaskStatus.FINISHED
+        self._task_status = EnumTaskStatus.PROCESSING_RESULTS
         return
