@@ -41,14 +41,13 @@ class Camera:
         If not location is provided, image will be saved to '~/Pictures/img_...'
 
         Returns
-            Image if successful
-            None if not
+            Boolean to inform if image was saved
         """
 
         successful_img, image = self.capture_image()
 
         if(not successful_img):
-            return None
+            return False
 
         if(file_name_location is None):
             dt_now = datetime.datetime.today()
@@ -65,7 +64,7 @@ class Camera:
 
         cv2.imwrite(file_name_location, image)
 
-        return None
+        return True
 
     def set_on(self):
         """
