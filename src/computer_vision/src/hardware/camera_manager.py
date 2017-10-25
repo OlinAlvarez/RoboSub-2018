@@ -48,7 +48,7 @@ class CameraManager:
 
         return None
 
-    def add_new_camera(self, obj_camera):
+    def add_new_camera(self, enum_cam_location, obj_camera):
         """
         Parameters
             obj_camera Camera
@@ -60,7 +60,7 @@ class CameraManager:
         if(self.contains_camera(obj_camera)):
             return False
 
-        self._available_cameras[cam_loc] = obj_camera
+        self._available_cameras[enum_cam_location] = obj_camera
         return True
 
     def delete_camera(self, enum_camera_location):
