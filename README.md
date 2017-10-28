@@ -23,3 +23,5 @@ Used to install opencv2
 ## Adding python package
 Add setup.py(ensure that you add dependent packages), uncomment catkin_python_setup(), and add __init__.py to root of package
 
+# What is opencv_only?
+- The purpose of this folder is for the early development of the Robosub(October 2017). Once we can confidently detect the objects we can move the code into ROS, our main system. 
