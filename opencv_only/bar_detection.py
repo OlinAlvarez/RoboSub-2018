@@ -7,7 +7,7 @@ import time
 # The purpose of this task is to ensure the camera is parallel with a bar.
 # This will guide us into the direction of the bouy.
 
-#DEBUG = True
+DEBUG = True
 DEBUG = False
 def main():
     img_path = "./images/front_cam/fourthrun/front{0}.jpg"
@@ -47,13 +47,18 @@ def detect_bottom_bar(img_path_base):
 
     if(not DEBUG):
         img_num_start = 126
-        img_num_end = 143
+        img_num_end = 144
         img_num_current = 126
     else:
-        img_num_start = 141
-        img_num_end = 141
-        img_num_current = 141
+        img_num_start = 126
+        img_num_end = 126
+        img_num_current = 126
+
+    upper_vertices_count = 8
+    lower_vertices_count = 3
+
     while(True):
+        leading_bar_found = False
         img_path = img_path_base.format(img_num_current)
 
         # Increment number
@@ -66,6 +71,7 @@ def detect_bottom_bar(img_path_base):
         img_height, img_width, img_bpp = np.shape(img_cv2)
         img_area = img_height * img_width
         max_object_area_threshold = img_area *.8
+        min_object_area_threshold = img_area * .0002
 
         img_result = img_cv2.copy()
 
@@ -111,21 +117,17 @@ def detect_bottom_bar(img_path_base):
 
         img_gray = cv2.cvtColor(img_color_filtered, cv2.COLOR_BGR2GRAY)
 
-        # ================ Want to removethresholding=====================
-        # ret, thresh = cv2.threshold(img_gray, lower_pixel_thresh, upper_pixel_thresh, cv2.THRESH_BINARY)
-    
-        # Adaptive Thresholding for images with different lighting
-        #thresh = cv2.adaptiveThreshold(img_gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11,  upper_pixel_thresh)
-
-        #if(DEBUG): 
-            #cv2.imshow('thresh_img', thresh)
-            #cv2.moveWindow("thresh_img", 700, 0)
-        #im2, contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        # ================ Want to removethresholding=====================
-
         im2, contours, hierarchy = cv2.findContours(img_gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
+        cv2.imshow("Original Image", img_cv2)
+        cv2.moveWindow("Original Image", 900, 0)
+        if(not DEBUG):
+            time.sleep(1)
+
         if(len(contours) == 0):
+            print "Leading bar not found."
+            img_result = cv2.putText(img_result, "Leading bar not found.", (100,100), cv2.FONT_HERSHEY_PLAIN, 2, 255, thickness = 4)
+            cv2.imshow('image', img_result)
             continue
 
         largest_area_cnt_val = None 
@@ -133,19 +135,23 @@ def detect_bottom_bar(img_path_base):
         
         for cnt in contours:
             area_cnt_val = cv2.contourArea(cnt)
-            #peri = cv2.arcLength(cnt, True)
-            #approx = cv2.approxPolyDP(cnt, 0.03 * peri, True)
+            peri = cv2.arcLength(cnt, True)
+            approx = cv2.approxPolyDP(cnt, 0.03 * peri, True)
 
             # We only want rectangles
-            #vertices_count = len(approx)
-            #if(vertices_count != 4):
-                #continue
-
-            # Ensure contour is smaller than max threshold
-            if(area_cnt_val > max_object_area_threshold):
+            vertices_count = len(approx)
+            if(not(vertices_count >= lower_vertices_count and vertices_count <= upper_vertices_count)):
+                if(DEBUG):
+                    print "Upper vertices bound: {0} - Lower vertcies bound: {1} - Found vertices count: {2}".format(upper_vertices_count, lower_vertices_count, str(vertices_count))
                 continue
 
-            # We are not lookign for circular shapes. Circular shapes tend to have many more points
+            # Ensure contour area is within specified threshold
+            if(area_cnt_val > max_object_area_threshold or area_cnt_val < min_object_area_threshold):
+                if(DEBUG):
+                    print "area_cnt_val {0} - max_area {1} - min_area{2}".format(area_cnt_val, max_object_area_threshold, min_object_area_threshold)
+                continue
+
+            # We are not looking for more rectangular shapes. Circular shapes tend to have many more points
             if(len(cnt) > 50):
                 continue
 
@@ -164,7 +170,8 @@ def detect_bottom_bar(img_path_base):
 
             cnt_area = cv2.contourArea(cnt)
 
-            # If there is only one and it passes all our checks, take it.
+            # If there is only one and it passes all our checks, it is MOST LIKELY the leading bar..
+            leading_bar_found = True
             if(largest_area_cnt_val is None):
                 largest_area_cnt_val = cnt_area
                 largest_cnt = cnt
@@ -172,7 +179,21 @@ def detect_bottom_bar(img_path_base):
                 largest_area_cnt_val = cnt_area
                 largest_cnt = cnt
 
+        if(DEBUG):
+            print "Largest contour area: " + str(largest_area_cnt_val)
+            print "Image area: " + str(img_area)
+
+        # Only plot if we found something
+        if(not leading_bar_found):
+            print "Leading bar not found."
+            img_result = cv2.putText(img_result, "Leading bar not found.", (100,100), cv2.FONT_HERSHEY_PLAIN, 2, 255, thickness = 4)
+            cv2.imshow('image', img_result)
+            continue
+
         M = cv2.moments(largest_cnt)
+        obj_direction = "I am lost..."
+        cam_x_center = img_width / 2
+        cam_x_offset = img_width * .05
         if(M['m00'] != 0):
             cx = int(M['m10']/M['m00'])
             cy = int(M['m01']/M['m00'])
@@ -180,11 +201,13 @@ def detect_bottom_bar(img_path_base):
             # draw center point
             cv2.circle(img_result, (cx, cy), 2, (255, 0, 0), -1)
 
-        # Only plot if we found something
-        if(largest_cnt is None):
-            print "Leading bar not detected.."
-
-            continue
+            # Determine obj relative to camera center with threshold
+            if(cx <= (cam_x_center - cam_x_offset)):
+                obj_direction = "Move Sub Left"
+            elif(cx >= (cam_x_center + cam_x_offset)):
+                obj_direction = "Move Sub Right"
+            else:
+                obj_direction = "Relatively Centered"
 
         # draw enclosing box
         rect = cv2.minAreaRect(largest_cnt)
@@ -192,9 +215,10 @@ def detect_bottom_bar(img_path_base):
         box = np.int0(box)
         img_result = cv2.drawContours(img_result, [box], 0, (0, 0, 255), 2)
 
+        # Where is object relative to center
+        img_result = cv2.putText(img_result, obj_direction, (100, 100), cv2.FONT_HERSHEY_PLAIN, 2, 255, thickness = 4)
+        img_result = cv2.line(img_result, (cam_x_center, 0), (cam_x_center, img_height), (0, 255, 0), 2)
         cv2.imshow('image', img_result)
-        if(not DEBUG):
-            time.sleep(1)
 
     cv2.destroyAllWindows()
 
