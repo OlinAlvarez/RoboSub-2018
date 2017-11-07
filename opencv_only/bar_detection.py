@@ -3,6 +3,7 @@
 import cv2
 import numpy as np
 import time
+from utils.color_manager import OpenCVColor
 
 # The purpose of this task is to ensure the camera is parallel with a bar.
 # This will guide us into the direction of the bouy.
@@ -38,9 +39,13 @@ def detect_bottom_bar(img_path_base):
     cv2.setTrackbarPos('SigmaColor', 'image',65)
     cv2.setTrackbarPos('SigmaSpace', 'image', 75)
     cv2.setTrackbarPos('HSV Thresh', 'image', 15)
-    cv2.setTrackbarPos('R', 'image', 235)
-    cv2.setTrackbarPos('G', 'image', 254)
-    cv2.setTrackbarPos('B', 'image', 180)
+
+    r_hardcode = 235
+    g_hardcode = 254
+    b_hardcode = 180
+    cv2.setTrackbarPos('R', 'image', r_hardcode)
+    cv2.setTrackbarPos('G', 'image', g_hardcode)
+    cv2.setTrackbarPos('B', 'image', b_hardcode)
     
     # Adaptive thersholding
     cv2.setTrackbarPos('Upper Pixel Thresh', 'image', 2)
@@ -56,6 +61,9 @@ def detect_bottom_bar(img_path_base):
 
     upper_vertices_count = 8
     lower_vertices_count = 3
+
+    # Start with object out here so we are not recreating every time..
+    target_color_obj = OpenCVColor(r_hardcode, g_hardcode, b_hardcode)
 
     while(True):
         leading_bar_found = False
@@ -78,6 +86,7 @@ def detect_bottom_bar(img_path_base):
         k = cv2.waitKey(1) & 0xFF
         if k == 27:
             break
+
         r = cv2.getTrackbarPos('R', 'image')
         g = cv2.getTrackbarPos('G', 'image')
         b = cv2.getTrackbarPos('B', 'image')
@@ -94,18 +103,13 @@ def detect_bottom_bar(img_path_base):
             cv2.imshow("blurred_img", img_blurred)
             cv2.moveWindow("blurred_img", 0,700)
 
-        # Filter out color to eliminate noise
+        # Convert bgr image to hsv 
         img_hsv = cv2.cvtColor(img_blurred, cv2.COLOR_BGR2HSV)
-        hsv_color_wanted = cv2.cvtColor(np.uint8([[[b,g,r]]]), cv2.COLOR_BGR2HSV)[0][0]
-        
-        wanted_hsv_hue = hsv_color_wanted[0]
-        # Utilizes numpy's unit 8 datatype and overflowing to calculate hue boudnaries
-        if(hsv_hue_thresh > wanted_hsv_hue or (hsv_hue_thresh + wanted_hsv_hue) > 255): 
-            hsv_hue_thresh += 1
-        lower_hue = np.uint8(wanted_hsv_hue - hsv_hue_thresh)
-        upper_hue = np.uint8(wanted_hsv_hue + hsv_hue_thresh)
-        lower_bar_hsv = np.array([lower_hue, 50, 50])
-        upper_bar_hsv = np.array([upper_hue, 255, 255])
+
+        # Obtain color we want to filter on
+        target_color_obj.set_rgb([r, g, b])
+        lower_bar_hsv = np.array(target_color_obj.get_hsv_lower_bound(hsv_hue_thresh))
+        upper_bar_hsv = np.array(target_color_obj.get_hsv_upper_bound(hsv_hue_thresh))
 
         # Create mask and filter out what we want
         img_mask = cv2.inRange(img_hsv, lower_bar_hsv, upper_bar_hsv)
@@ -116,7 +120,6 @@ def detect_bottom_bar(img_path_base):
             cv2.moveWindow("img_color_filtered", 800, 800)
 
         img_gray = cv2.cvtColor(img_color_filtered, cv2.COLOR_BGR2GRAY)
-
         im2, contours, hierarchy = cv2.findContours(img_gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         cv2.imshow("Original Image", img_cv2)
