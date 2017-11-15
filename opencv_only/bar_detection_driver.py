@@ -3,7 +3,7 @@
 import cv2
 import numpy as np
 import time
-from utils.color_manager import OpenCVColor
+from detection.utils.color_manager import OpenCVColor
 
 # The purpose of this task is to ensure the camera is parallel with a bar.
 # This will guide us into the direction of the bouy.
@@ -137,6 +137,10 @@ def detect_bottom_bar(img_path_base):
         largest_cnt = None 
         
         for cnt in contours:
+            # We are looking for rectangular shapes. Circular shapes tend to have many more points
+            if(len(cnt) > 50):
+                continue
+
             area_cnt_val = cv2.contourArea(cnt)
             peri = cv2.arcLength(cnt, True)
             approx = cv2.approxPolyDP(cnt, 0.03 * peri, True)
@@ -152,10 +156,6 @@ def detect_bottom_bar(img_path_base):
             if(area_cnt_val > max_object_area_threshold or area_cnt_val < min_object_area_threshold):
                 if(DEBUG):
                     print "area_cnt_val {0} - max_area {1} - min_area{2}".format(area_cnt_val, max_object_area_threshold, min_object_area_threshold)
-                continue
-
-            # We are not looking for more rectangular shapes. Circular shapes tend to have many more points
-            if(len(cnt) > 50):
                 continue
 
             if(DEBUG):
