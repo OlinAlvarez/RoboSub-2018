@@ -9,13 +9,25 @@ Handle Results
 """
 
 from enum import IntEnum
+from collections import namedtuple
 
+DEBUG = True
 class EnumTaskStatus(IntEnum):
     NOT_STARTED = 0
     INITIALIZING = 1
     WORKING = 2
     PAUSED = 3
     FINISHED = 4
+
+
+class ColorChoices(IntEnum):
+    RED = 1
+    GREEN = 2
+    YELLOW = 3
+    PINK = 4
+    BOUY = 5
+    FIRST_GATE = 6
+    SECOND_GATE = 7
 
 class InitializationException(Exception):
     pass
@@ -26,7 +38,25 @@ class ExecutionException(Exception):
 class HandleResultsExceptions(Exception):
     pass 
 
+Threshold = namedtuple("Threshold", ['saturation', 'hue'])
+
 class BaseTask(object):
+    hsv_colors_list = { ColorChoices.RED :[211,85,43],
+        ColorChoices.GREEN :[25,123,76],
+        ColorChoices.YELLOW :[199,204,120],
+        ColorChoices.PINK :[255,102,102],
+        ColorChoices.BUOY :[101,240,127],
+        ColorChoices.FIRST_GATE :[122,168,122], 
+        ColorChoices.SECOND_GATE :[0,0,0] }
+
+    color_threshold_list = [Threshold(10,60),
+        Threshold(20,70),
+        Threshold(50,150),
+        Threshold(0,0),
+        Threshold(0,0),
+        Threshold(6,52),
+        Threshold(0,0)]
+
     def __init__(self):
         self._task_name = ""
         self._task_status = EnumTaskStatus.NOT_STARTED
@@ -55,3 +85,7 @@ class BaseTask(object):
     def handle_results(self):
         self._task_status = EnumTaskStatus.FINISHED
         return
+
+    def print_debug(self, msg):
+        if(DEBUG):
+            print msg

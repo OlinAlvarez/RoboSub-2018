@@ -53,7 +53,7 @@ def main():
             print "Camera at location '{0}' is already on".format(camera_location.name)
 
         # Perform camera functionality
-        task_to_run_obj = TaskFactory.create_task(task_enum, primary_cam_obj)
+        task_to_run_obj = TaskFactory.create_task(task_enum, cv_info_msg,  camera_manager)
         task_to_run_obj.run_task()
 
         loop_rate.sleep()

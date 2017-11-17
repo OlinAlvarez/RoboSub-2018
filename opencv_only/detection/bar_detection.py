@@ -67,7 +67,7 @@ class ImageMetaData(object):
 
     def _canWeCalculate(self):
         if(self.opencv_img is None):
-            Raise ValueError("opencv_img is None. Cannot calculate anything.")
+            raise ValueError("opencv_img is None. Cannot calculate anything.")
 
     def _setDefaultMetaDataValues(self):
         self._img_width = None
