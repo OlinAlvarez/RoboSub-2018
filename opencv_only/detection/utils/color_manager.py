@@ -12,22 +12,31 @@ class OpenCVColor(object):
         self._cached_hsv = None
 
     def set_red(self, r_val):
-        self.check_valid_color(r_val)
+        self._check_valid_color(r_val)
 
         self.r = r_val
         self._cached_hsv = None
 
     def set_green(self, g_val):
-        self.check_valid_color(g_val)
+        self._check_valid_color(g_val)
 
         self.g = g_val
         self._cached_hsv = None
 
     def set_blue(self, b_val):
-        self.check_valid_color(b_val)
+        self._check_valid_color(b_val)
 
         self.b = b_val
         self._cached_hsv = None
+
+    def get_red(self):
+        return self.r
+
+    def get_green(self):
+        return self.g
+
+    def get_blue(self):
+        return self.b
 
     def set_rgb(self, rgb_list):
         if(not isinstance(rgb_list, list)):
@@ -73,7 +82,7 @@ class OpenCVColor(object):
 
         return [np.uint8(hsv_hue + hue_offset), 255, 255]
 
-    def check_valid_color(self, color_val):
+    def _check_valid_color(self, color_val):
         if(not self.is_valid_color_value(color_val)):
             raise ValueError("'{0}' color value is out of bound.".format(str(color_val)))
 
